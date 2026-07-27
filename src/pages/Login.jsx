@@ -14,8 +14,11 @@ const Login = () => {
     setError('');
     setLoading(true);
     
-    // Check for custom admin bypass
-    if (email === 'admin' && password === 'admin') {
+    // Custom admin bypass via Environment Variables
+    const adminUser = import.meta.env.VITE_ADMIN_USER || 'admin';
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
+    
+    if (email === adminUser && password === adminPass) {
       localStorage.setItem('customAdmin', 'true');
       window.location.href = '/'; // Force reload to trigger App.jsx logic
       return;
