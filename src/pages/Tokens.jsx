@@ -1,13 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, set, update, remove } from 'firebase/database';
 import { database } from '../firebase';
-import { Key, Plus, Trash2, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Key, Plus, Trash2, ShieldAlert, CheckCircle, Edit, X } from 'lucide-react';
 
 const Tokens = () => {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [durationDays, setDurationDays] = useState(30);
   const [customToken, setCustomToken] = useState('');
+  const [editModalData, setEditModalData] = useState(null);
+
+  const openEditModal = (token) => {
+    setEditModalData({
+      originalToken: token.token,
+      token: token.token,
+      type: token.type,
+      deviceId: token.deviceId || '',
+      expiresAt: token.expiresAt,
+      isActive: token.isActive,
+      addDays: 0
+    });
+  };
+
+  const saveEdit = () => {
+    let finalToken = editModalData.token.trim();
+    if (!finalToken) return alert("Token tidak boleh kosong");
+    if (/[.#$\[\]]/.test(finalToken)) return alert("Token tidak boleh mengandung . # $ [ atau ]");
+
+    let newExpiresAt = editModalData.expiresAt;
+    if (editModalData.addDays > 0) {
+      const baseTime = (newExpiresAt < Date.now()) ? Date.now() : newExpiresAt;
+      newExpiresAt = baseTime + (editModalData.addDays * 24 * 60 * 60 * 1000);
+    }
+
+    const tokenObj = {
+      token: finalToken,
+      type: editModalData.type,
+      deviceId: editModalData.deviceId || null,
+      expiresAt: newExpiresAt,
+      isActive: editModalData.isActive
+    };
+
+    if (finalToken !== editModalData.originalToken) {
+      remove(ref(database, 'access_tokens/' + editModalData.originalToken))
+        .then(() => set(ref(database, 'access_tokens/' + finalToken), tokenObj))
+        .then(() => {
+          setEditModalData(null);
+        })
+        .catch(e => alert('Error: ' + e.message));
+    } else {
+      update(ref(database, 'access_tokens/' + finalToken), tokenObj)
+        .then(() => {
+          setEditModalData(null);
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
+  };
 
   useEffect(() => {
     const tokensRef = ref(database, 'access_tokens');
@@ -167,6 +215,13 @@ const Tokens = () => {
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                         <button
+                          onClick={() => openEditModal(token)}
+                          className="btn btn-outline"
+                          style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}
+                        >
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button
                           onClick={() => toggleTokenStatus(token)}
                           className="btn btn-outline"
                           style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}
@@ -222,6 +277,13 @@ const Tokens = () => {
                     </span>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
+                        onClick={() => openEditModal(token)}
+                        className="btn btn-outline"
+                        style={{ padding: '6px 14px', fontSize: '13px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
                         onClick={() => toggleTokenStatus(token)}
                         className="btn btn-outline"
                         style={{ padding: '6px 14px', fontSize: '13px' }}
@@ -243,6 +305,79 @@ const Tokens = () => {
           </>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editModalData && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '1.5rem', position: 'relative' }}>
+            <button
+              onClick={() => setEditModalData(null)}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+            <h3 style={{ marginBottom: '1.25rem', fontSize: '1.1rem' }}>Edit / Renew Token</h3>
+            
+            <div className="form-group">
+              <label className="form-label">Token Code</label>
+              <input
+                className="form-input"
+                value={editModalData.token}
+                onChange={e => setEditModalData({...editModalData, token: e.target.value.toUpperCase()})}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Type</label>
+              <select
+                className="form-input"
+                value={editModalData.type}
+                onChange={e => setEditModalData({...editModalData, type: e.target.value})}
+              >
+                <option value="PREMIUM">PREMIUM</option>
+                <option value="TRIAL">TRIAL</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Device ID (Kosongkan jika ingin reset/unbind)</label>
+              <input
+                className="form-input"
+                value={editModalData.deviceId}
+                onChange={e => setEditModalData({...editModalData, deviceId: e.target.value})}
+                placeholder="Unbound"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Perpanjang (Renew) +Hari</label>
+              <select
+                className="form-input"
+                value={editModalData.addDays}
+                onChange={e => setEditModalData({...editModalData, addDays: Number(e.target.value)})}
+              >
+                <option value={0}>Tidak Perpanjang</option>
+                <option value={1}>+1 Hari</option>
+                <option value={7}>+7 Hari</option>
+                <option value={30}>+30 Hari</option>
+                <option value={90}>+90 Hari</option>
+                <option value={365}>+1 Tahun</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button onClick={saveEdit} className="btn btn-primary" style={{ flex: 1 }}>
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
