@@ -291,3 +291,122 @@ button {
     font-size: 1.1rem;
   }
 }
+
+/* Mobile Top Bar */
+.mobile-topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+/* Sidebar close button - hidden on desktop */
+.sidebar-close-btn {
+  display: none !important;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Page Header & Container */
+.page-container {
+  max-width: 1200px;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-icon {
+  display: inline;
+  vertical-align: middle;
+  margin-right: 0.25rem;
+}
+
+/* Mobile overrides */
+@media (max-width: 768px) {
+  /* Show hamburger bar */
+  .mobile-topbar {
+    display: flex;
+  }
+
+  /* Sidebar becomes a drawer */
+  .app-layout {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Show close button on mobile sidebar */
+  .sidebar-close-btn {
+    display: flex !important;
+  }
+
+  /* Fix sidebar nav to vertical again */
+  .sidebar-nav {
+    flex-direction: column;
+    overflow-x: unset;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+  }
+
+  .nav-item {
+    padding: 0.875rem 1.25rem;
+    border-bottom: none;
+    border-right: none;
+    white-space: nowrap;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    border-bottom: none;
+    border-right: 3px solid var(--primary-color);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+
+  /* Show nav text again (overrides previous mobile hide) */
+  .nav-text {
+    display: inline !important;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+}
