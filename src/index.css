@@ -174,3 +174,62 @@ button {
 .animate-fade-in {
   animation: fadeIn 0.3s ease forwards;
 }
+
+/* Responsive Layout for Mobile */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  
+  .sidebar-header {
+    padding: 1rem;
+    font-size: 1.25rem;
+  }
+  
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  
+  .nav-item {
+    padding: 1rem;
+    white-space: nowrap;
+    border-right: none;
+    border-bottom: 3px solid transparent;
+    gap: 0.5rem;
+  }
+  
+  .nav-item:hover, .nav-item.active {
+    border-right: none;
+    border-bottom: 3px solid var(--primary-color);
+    background-color: transparent;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .logout-container {
+    display: none; /* Hide logout button on mobile header to save space, or style it inline */
+  }
+
+  .nav-text {
+    display: none;
+  }
+  
+  .logout-btn {
+    margin-left: auto;
+  }
+}

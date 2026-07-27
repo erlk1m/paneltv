@@ -27,26 +27,25 @@ const Layout = ({ children, onLogout }) => {
         <nav className="sidebar-nav">
           <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
             <LayoutDashboard size={20} />
-            Dashboard
+            <span className="nav-text">Dashboard</span>
           </Link>
           <Link to="/channels" className={`nav-item ${location.pathname === '/channels' ? 'active' : ''}`}>
             <Tv size={20} />
-            Channels
+            <span className="nav-text">Channels</span>
           </Link>
           <Link to="/tokens" className={`nav-item ${location.pathname === '/tokens' ? 'active' : ''}`}>
             <Key size={20} />
-            Tokens
+            <span className="nav-text">Tokens</span>
           </Link>
           <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`}>
             <SettingsIcon size={20} />
-            Settings
+            <span className="nav-text">Settings</span>
           </Link>
-        </nav>
-        <div style={{ padding: '1.5rem' }}>
-          <button onClick={onLogout} className="btn btn-outline" style={{ width: '100%' }}>
-            <LogOut size={18} /> Logout
+          <button onClick={onLogout} className="nav-item logout-btn" style={{ background: 'transparent', border: 'none', width: 'auto', color: 'var(--danger-color)' }}>
+            <LogOut size={20} />
+            <span className="nav-text">Logout</span>
           </button>
-        </div>
+        </nav>
       </aside>
       <main className="main-content">
         {children}
