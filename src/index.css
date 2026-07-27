@@ -233,3 +233,61 @@ button {
     margin-left: auto;
   }
 }
+
+/* Token Form */
+.token-form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.token-form .form-input {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Token Table - Desktop only */
+.token-table-wrapper {
+  display: block;
+  overflow-x: auto;
+}
+
+/* Token Card List - Mobile only (hidden on desktop) */
+.token-card-list {
+  display: none;
+}
+
+.token-card-item {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.token-card-item:last-child {
+  border-bottom: none;
+}
+
+/* Responsive: Mobile overrides */
+@media (max-width: 640px) {
+  .token-table-wrapper {
+    display: none;
+  }
+
+  .token-card-list {
+    display: block;
+  }
+
+  .token-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .token-form .form-input,
+  .token-form .btn {
+    width: 100%;
+  }
+
+  .page-header h2 {
+    font-size: 1.1rem;
+  }
+}
