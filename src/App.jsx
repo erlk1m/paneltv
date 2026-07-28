@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
-import { LayoutDashboard, Tv, Settings as SettingsIcon, LogOut, Loader, Key, Users, CreditCard, BookOpen, BarChart2, FileText, Code2, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Tv, Settings as SettingsIcon, LogOut, Loader, Key, Users, CreditCard, BookOpen, BarChart2, FileText, Code2, Menu, X, Layers } from 'lucide-react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Channels from './pages/Channels';
@@ -14,10 +14,12 @@ import EPG from './pages/EPG';
 import Analytics from './pages/Analytics';
 import Logs from './pages/Logs';
 import ApiKeys from './pages/ApiKeys';
+import Categories from './pages/Categories';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/channels', icon: Tv, label: 'Channels' },
+  { path: '/categories', icon: Layers, label: 'Categories' },
   { path: '/tokens', icon: Key, label: 'Tokens' },
   { path: '/users', icon: Users, label: 'Users' },
   { path: '/subscriptions', icon: CreditCard, label: 'Subscriptions' },
@@ -156,6 +158,7 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute user={user}><Layout onLogout={handleLogout}><Analytics /></Layout></ProtectedRoute>} />
         <Route path="/logs" element={<ProtectedRoute user={user}><Layout onLogout={handleLogout}><Logs /></Layout></ProtectedRoute>} />
         <Route path="/apikeys" element={<ProtectedRoute user={user}><Layout onLogout={handleLogout}><ApiKeys /></Layout></ProtectedRoute>} />
+        <Route path="/categories" element={<ProtectedRoute user={user}><Layout onLogout={handleLogout}><Categories /></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute user={user}><Layout onLogout={handleLogout}><Settings /></Layout></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
