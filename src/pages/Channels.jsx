@@ -416,7 +416,8 @@ const Channels = () => {
               </div>
               <div className="form-group">
                 <label className="form-label">Kategori</label>
-                <input type="text" name="category" className="form-input" value={formData.category} onChange={handleInputChange} placeholder="Nasional, Sport, dll" required />
+                <input type="text" name="category" className="form-input" value={formData.category} onChange={handleInputChange} placeholder="Nasional, atau Playlist / Sub-kategori" required />
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>Gunakan garis miring untuk membuat Playlist. Contoh: <b>Privat / Drama</b></small>
               </div>
               <div className="form-group">
                 <label className="form-label">Logo URL (opsional)</label>
