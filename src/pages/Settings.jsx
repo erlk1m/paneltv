@@ -8,6 +8,7 @@ const Settings = () => {
     appName: 'Erlkim IPTV',
     logoUrl: '',
     trialDays: 1,
+    marqueeText: '',
     maintenanceMode: false,
     maintenanceMessage: 'Sistem sedang dalam pemeliharaan. Coba lagi nanti.',
     forceUpdate: false,
@@ -99,6 +100,16 @@ const Settings = () => {
             <label className="form-label">Durasi Trial (hari)</label>
             <input className="form-input" type="number" min="1" value={config.trialDays} onChange={e => setConfig({ ...config, trialDays: Number(e.target.value) })} />
           </div>
+        </div>
+        <div className="form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
+          <label className="form-label">Running Text (Marquee) 📣</label>
+          <input
+            className="form-input"
+            placeholder="Contoh: Selamat datang di ERLKIM TV! Nikmati siaran premium terbaik."
+            value={config.marqueeText}
+            onChange={e => setConfig({ ...config, marqueeText: e.target.value })}
+          />
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Teks ini akan berjalan di bagian atas layar utama aplikasi TV/HP.</p>
         </div>
       </SectionCard>
 
