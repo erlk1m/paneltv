@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, set, update, remove } from 'firebase/database';
 import { database } from '../firebase';
-import { Key, Plus, Trash2, ShieldAlert, CheckCircle, Edit, X } from 'lucide-react';
+import { Key, Plus, Trash2, ShieldAlert, CheckCircle, Edit, X, Smartphone, RefreshCw } from 'lucide-react';
 
 const Tokens = () => {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [durationDays, setDurationDays] = useState(30);
+  const [maxDevices, setMaxDevices] = useState(1);
   const [customToken, setCustomToken] = useState('');
   const [editModalData, setEditModalData] = useState(null);
 
@@ -15,7 +16,8 @@ const Tokens = () => {
       originalToken: token.token,
       token: token.token,
       type: token.type,
-      deviceId: token.deviceId || '',
+      maxDevices: token.maxDevices || 1,
+      devices: token.devices || {},
       expiresAt: token.expiresAt,
       isActive: token.isActive,
       addDays: 0
@@ -36,7 +38,8 @@ const Tokens = () => {
     const tokenObj = {
       token: finalToken,
       type: editModalData.type,
-      deviceId: editModalData.deviceId || null,
+      maxDevices: editModalData.maxDevices,
+      devices: editModalData.devices,
       expiresAt: newExpiresAt,
       isActive: editModalData.isActive
     };
@@ -94,7 +97,8 @@ const Tokens = () => {
       type: 'PREMIUM',
       expiresAt: expiresAt,
       isActive: true,
-      deviceId: null
+      maxDevices: maxDevices,
+      devices: {}
     };
 
     set(ref(database, 'access_tokens/' + finalToken), newToken)
@@ -111,6 +115,14 @@ const Tokens = () => {
     }).catch(e => alert("Error updating token: " + e.message));
   };
 
+  const resetDevices = (token) => {
+    if (window.confirm("Reset all registered devices for this token?")) {
+      update(ref(database, 'access_tokens/' + token.token), {
+        devices: {}
+      }).catch(e => alert("Error resetting devices: " + e.message));
+    }
+  };
+
   const deleteToken = (tokenId) => {
     if (window.confirm("Are you sure you want to permanently delete this token?")) {
       remove(ref(database, 'access_tokens/' + tokenId))
@@ -122,41 +134,61 @@ const Tokens = () => {
 
   return (
     <div className="page-container">
-      {/* Page Title */}
       <div className="page-header">
         <h2><Key className="inline-icon" /> Token Management</h2>
       </div>
 
-      {/* Generate Token Form Card */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)' }}>Generate New Token</h3>
-        <div className="token-form">
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Custom Token (Opsional)"
-            value={customToken}
-            onChange={(e) => setCustomToken(e.target.value.toUpperCase())}
-          />
-          <select
-            className="form-input"
-            value={durationDays}
-            onChange={(e) => setDurationDays(Number(e.target.value))}
-          >
-            <option value={1}>1 Day</option>
-            <option value={7}>7 Days</option>
-            <option value={30}>1 Month (30 Days)</option>
-            <option value={90}>3 Months (90 Days)</option>
-            <option value={365}>1 Year (365 Days)</option>
-            <option value={36500}>Lifetime (100 Years)</option>
-          </select>
-          <button onClick={generateToken} className="btn btn-primary">
-            <Plus size={18} /> Generate VIP Token
-          </button>
+        <div className="token-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          <div className="form-group">
+            <label className="form-label">Custom Token</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="VIP-XXXXXXXX"
+              value={customToken}
+              onChange={(e) => setCustomToken(e.target.value.toUpperCase())}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Duration</label>
+            <select
+              className="form-input"
+              value={durationDays}
+              onChange={(e) => setDurationDays(Number(e.target.value))}
+            >
+              <option value={1}>1 Day</option>
+              <option value={7}>7 Days</option>
+              <option value={30}>1 Month (30 Days)</option>
+              <option value={90}>3 Months (90 Days)</option>
+              <option value={365}>1 Year (365 Days)</option>
+              <option value={36500}>Lifetime (100 Years)</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Max Devices</label>
+            <select
+              className="form-input"
+              value={maxDevices}
+              onChange={(e) => setMaxDevices(Number(e.target.value))}
+            >
+              <option value={1}>1 Device</option>
+              <option value={2}>2 Devices</option>
+              <option value={3}>3 Devices</option>
+              <option value={5}>5 Devices</option>
+              <option value={10}>10 Devices</option>
+              <option value={100}>Unlimited (100)</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button onClick={generateToken} className="btn btn-primary" style={{ width: '100%' }}>
+              <Plus size={18} /> Generate VIP
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Token List */}
       <div className="card">
         {loading ? (
           <div style={{ padding: '2rem', textAlign: 'center' }}>Loading tokens...</div>
@@ -165,29 +197,29 @@ const Tokens = () => {
             No tokens generated yet.
           </div>
         ) : (
-          <>
-            {/* Desktop Table View */}
-            <div className="token-table-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <th style={{ padding: '12px 16px' }}>Token</th>
-                    <th style={{ padding: '12px 16px' }}>Type</th>
-                    <th style={{ padding: '12px 16px' }}>Expires At</th>
-                    <th style={{ padding: '12px 16px' }}>Device ID</th>
-                    <th style={{ padding: '12px 16px' }}>Status</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tokens.map((token) => (
+          <div className="token-table-wrapper">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <th style={{ padding: '12px 16px' }}>Token</th>
+                  <th style={{ padding: '12px 16px' }}>Type</th>
+                  <th style={{ padding: '12px 16px' }}>Expires At</th>
+                  <th style={{ padding: '12px 16px' }}>Devices</th>
+                  <th style={{ padding: '12px 16px' }}>Status</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tokens.map((token) => {
+                  const deviceCount = token.devices ? Object.keys(token.devices).length : 0;
+                  const maxAllowed = token.maxDevices || 1;
+
+                  return (
                     <tr key={token.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{token.token}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
+                          padding: '4px 8px', borderRadius: '4px', fontSize: '12px',
                           backgroundColor: token.type === 'PREMIUM' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)',
                           color: token.type === 'PREMIUM' ? '#eab308' : '#3b82f6'
                         }}>
@@ -199,8 +231,17 @@ const Tokens = () => {
                           ? <span style={{ fontWeight: 'bold', color: '#10b981' }}>Lifetime ♾️</span>
                           : new Date(token.expiresAt).toLocaleString()}
                       </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                        {token.deviceId || <em>Unused</em>}
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Smartphone size={14} className="text-secondary" />
+                          <span style={{
+                            fontSize: '14px',
+                            color: deviceCount >= maxAllowed ? '#ef4444' : 'inherit',
+                            fontWeight: deviceCount >= maxAllowed ? 'bold' : 'normal'
+                          }}>
+                            {deviceCount} / {maxAllowed}
+                          </span>
+                        </div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         {token.isActive ? (
@@ -214,99 +255,25 @@ const Tokens = () => {
                         )}
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <button
-                          onClick={() => openEditModal(token)}
-                          className="btn btn-outline"
-                          style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}
-                        >
+                        <button onClick={() => resetDevices(token)} className="btn btn-outline" title="Reset Devices" style={{ marginRight: '8px', padding: '6px' }}>
+                          <RefreshCw size={14} />
+                        </button>
+                        <button onClick={() => openEditModal(token)} className="btn btn-outline" style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}>
                           <Edit size={14} /> Edit
                         </button>
-                        <button
-                          onClick={() => toggleTokenStatus(token)}
-                          className="btn btn-outline"
-                          style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}
-                        >
-                          {token.isActive ? 'Revoke' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => deleteToken(token.id)}
-                          className="btn btn-danger"
-                          style={{ padding: '6px 12px', fontSize: '13px' }}
-                        >
+                        <button onClick={() => deleteToken(token.id)} className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '13px' }}>
                           <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="token-card-list">
-              {tokens.map((token) => (
-                <div key={token.id} className="token-card-item">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '15px', wordBreak: 'break-all' }}>{token.token}</span>
-                    <span style={{
-                      marginLeft: '8px',
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      flexShrink: 0,
-                      backgroundColor: token.type === 'PREMIUM' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                      color: token.type === 'PREMIUM' ? '#eab308' : '#3b82f6'
-                    }}>
-                      {token.type}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Expires: {isLifetime(token.expiresAt)
-                      ? <span style={{ color: '#10b981', fontWeight: 'bold' }}>Lifetime ♾️</span>
-                      : new Date(token.expiresAt).toLocaleDateString()}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                    Device: {token.deviceId || <em>Unused</em>}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px',
-                      color: token.isActive ? '#10b981' : '#ef4444'
-                    }}>
-                      {token.isActive ? <><CheckCircle size={14} /> Active</> : <><ShieldAlert size={14} /> Revoked</>}
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => openEditModal(token)}
-                        className="btn btn-outline"
-                        style={{ padding: '6px 14px', fontSize: '13px' }}
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => toggleTokenStatus(token)}
-                        className="btn btn-outline"
-                        style={{ padding: '6px 14px', fontSize: '13px' }}
-                      >
-                        {token.isActive ? 'Revoke' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={() => deleteToken(token.id)}
-                        className="btn btn-danger"
-                        style={{ padding: '6px 12px', fontSize: '13px' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Edit Modal */}
       {editModalData && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -315,58 +282,48 @@ const Tokens = () => {
           padding: '1rem'
         }}>
           <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '1.5rem', position: 'relative' }}>
-            <button
-              onClick={() => setEditModalData(null)}
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-            >
+            <button onClick={() => setEditModalData(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
               <X size={20} />
             </button>
             <h3 style={{ marginBottom: '1.25rem', fontSize: '1.1rem' }}>Edit / Renew Token</h3>
             
             <div className="form-group">
               <label className="form-label">Token Code</label>
-              <input
-                className="form-input"
-                value={editModalData.token}
-                onChange={e => setEditModalData({...editModalData, token: e.target.value.toUpperCase()})}
-              />
+              <input className="form-input" value={editModalData.token} onChange={e => setEditModalData({...editModalData, token: e.target.value.toUpperCase()})} />
             </div>
             
             <div className="form-group">
-              <label className="form-label">Type</label>
+              <label className="form-label">Max Devices</label>
               <select
                 className="form-input"
-                value={editModalData.type}
-                onChange={e => setEditModalData({...editModalData, type: e.target.value})}
+                value={editModalData.maxDevices}
+                onChange={e => setEditModalData({...editModalData, maxDevices: Number(e.target.value)})}
               >
-                <option value="PREMIUM">PREMIUM</option>
-                <option value="TRIAL">TRIAL</option>
+                <option value={1}>1 Device</option>
+                <option value={2}>2 Devices</option>
+                <option value={3}>3 Devices</option>
+                <option value={5}>5 Devices</option>
+                <option value={10}>10 Devices</option>
               </select>
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Device ID (Kosongkan jika ingin reset/unbind)</label>
-              <input
-                className="form-input"
-                value={editModalData.deviceId}
-                onChange={e => setEditModalData({...editModalData, deviceId: e.target.value})}
-                placeholder="Unbound"
-              />
             </div>
 
             <div className="form-group">
               <label className="form-label">Perpanjang (Renew) +Hari</label>
-              <select
-                className="form-input"
-                value={editModalData.addDays}
-                onChange={e => setEditModalData({...editModalData, addDays: Number(e.target.value)})}
-              >
+              <select className="form-input" value={editModalData.addDays} onChange={e => setEditModalData({...editModalData, addDays: Number(e.target.value)})}>
                 <option value={0}>Tidak Perpanjang</option>
                 <option value={1}>+1 Hari</option>
                 <option value={7}>+7 Hari</option>
                 <option value={30}>+30 Hari</option>
                 <option value={90}>+90 Hari</option>
                 <option value={365}>+1 Tahun</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-input" value={editModalData.isActive} onChange={e => setEditModalData({...editModalData, isActive: e.target.value === 'true'})}>
+                <option value="true">Active</option>
+                <option value="false">Revoked</option>
               </select>
             </div>
 
