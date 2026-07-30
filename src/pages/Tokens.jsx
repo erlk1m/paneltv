@@ -197,80 +197,130 @@ const Tokens = () => {
             No tokens generated yet.
           </div>
         ) : (
-          <div className="token-table-wrapper">
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={{ padding: '12px 16px' }}>Token</th>
-                  <th style={{ padding: '12px 16px' }}>Type</th>
-                  <th style={{ padding: '12px 16px' }}>Expires At</th>
-                  <th style={{ padding: '12px 16px' }}>Devices</th>
-                  <th style={{ padding: '12px 16px' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tokens.map((token) => {
-                  const deviceCount = token.devices ? Object.keys(token.devices).length : 0;
-                  const maxAllowed = token.maxDevices || 1;
+          <>
+            <div className="token-table-wrapper">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <th style={{ padding: '12px 16px' }}>Token</th>
+                    <th style={{ padding: '12px 16px' }}>Type</th>
+                    <th style={{ padding: '12px 16px' }}>Expires At</th>
+                    <th style={{ padding: '12px 16px' }}>Devices</th>
+                    <th style={{ padding: '12px 16px' }}>Status</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tokens.map((token) => {
+                    const deviceCount = token.devices ? Object.keys(token.devices).length : 0;
+                    const maxAllowed = token.maxDevices || 1;
 
-                  return (
-                    <tr key={token.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{token.token}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{
-                          padding: '4px 8px', borderRadius: '4px', fontSize: '12px',
-                          backgroundColor: token.type === 'PREMIUM' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                          color: token.type === 'PREMIUM' ? '#eab308' : '#3b82f6'
-                        }}>
-                          {token.type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        {isLifetime(token.expiresAt)
-                          ? <span style={{ fontWeight: 'bold', color: '#10b981' }}>Lifetime ♾️</span>
-                          : new Date(token.expiresAt).toLocaleString()}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Smartphone size={14} className="text-secondary" />
+                    return (
+                      <tr key={token.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{token.token}</td>
+                        <td style={{ padding: '12px 16px' }}>
                           <span style={{
-                            fontSize: '14px',
-                            color: deviceCount >= maxAllowed ? '#ef4444' : 'inherit',
-                            fontWeight: deviceCount >= maxAllowed ? 'bold' : 'normal'
+                            padding: '4px 8px', borderRadius: '4px', fontSize: '12px',
+                            backgroundColor: token.type === 'PREMIUM' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                            color: token.type === 'PREMIUM' ? '#eab308' : '#3b82f6'
                           }}>
-                            {deviceCount} / {maxAllowed}
+                            {token.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {isLifetime(token.expiresAt)
+                            ? <span style={{ fontWeight: 'bold', color: '#10b981' }}>Lifetime ♾️</span>
+                            : new Date(token.expiresAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Smartphone size={14} className="text-secondary" />
+                            <span style={{
+                              fontSize: '14px',
+                              color: deviceCount >= maxAllowed ? '#ef4444' : 'inherit',
+                              fontWeight: deviceCount >= maxAllowed ? 'bold' : 'normal'
+                            }}>
+                              {deviceCount} / {maxAllowed}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {token.isActive ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '14px' }}>
+                              <CheckCircle size={14} /> Active
+                            </span>
+                          ) : (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontSize: '14px' }}>
+                              <ShieldAlert size={14} /> Revoked
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <button onClick={() => resetDevices(token)} className="btn btn-outline" title="Reset Devices" style={{ marginRight: '8px', padding: '6px' }}>
+                            <RefreshCw size={14} />
+                          </button>
+                          <button onClick={() => openEditModal(token)} className="btn btn-outline" style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}>
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button onClick={() => deleteToken(token.id)} className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="token-card-list">
+              {tokens.map((token) => {
+                const deviceCount = token.devices ? Object.keys(token.devices).length : 0;
+                const maxAllowed = token.maxDevices || 1;
+                return (
+                  <div key={token.id} className="token-card-item">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 'bold' }}>{token.token}</span>
+                      <span style={{
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '12px',
+                        backgroundColor: token.type === 'PREMIUM' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                        color: token.type === 'PREMIUM' ? '#eab308' : '#3b82f6'
+                      }}>
+                        {token.type}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                      Expires: {isLifetime(token.expiresAt) ? "Lifetime ♾️" : new Date(token.expiresAt).toLocaleString()}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Smartphone size={14} className="text-secondary" />
+                          <span style={{ fontSize: '14px', color: deviceCount >= maxAllowed ? '#ef4444' : 'inherit' }}>
+                            {deviceCount}/{maxAllowed}
                           </span>
                         </div>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
                         {token.isActive ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '14px' }}>
-                            <CheckCircle size={14} /> Active
+                          <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
+                            <CheckCircle size={14}/> Active
                           </span>
                         ) : (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontSize: '14px' }}>
-                            <ShieldAlert size={14} /> Revoked
+                          <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
+                            <ShieldAlert size={14}/> Revoked
                           </span>
                         )}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <button onClick={() => resetDevices(token)} className="btn btn-outline" title="Reset Devices" style={{ marginRight: '8px', padding: '6px' }}>
-                          <RefreshCw size={14} />
-                        </button>
-                        <button onClick={() => openEditModal(token)} className="btn btn-outline" style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}>
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button onClick={() => deleteToken(token.id)} className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '13px' }}>
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => resetDevices(token)} className="btn btn-outline" style={{ padding: '6px' }}><RefreshCw size={14}/></button>
+                        <button onClick={() => openEditModal(token)} className="btn btn-outline" style={{ padding: '6px 10px', fontSize: '12px' }}>Edit</button>
+                        <button onClick={() => deleteToken(token.id)} className="btn btn-danger" style={{ padding: '6px 10px' }}><Trash2 size={14}/></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
