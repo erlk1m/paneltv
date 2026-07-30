@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, set } from 'firebase/database';
 import { database } from '../firebase';
-import { Settings as SettingsIcon, Save, AlertTriangle, Power, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Save, AlertTriangle, Power, RefreshCw, MessageCircle, Globe, Zap } from 'lucide-react';
 
 const Settings = () => {
   const [config, setConfig] = useState({
@@ -14,6 +14,9 @@ const Settings = () => {
     forceUpdate: false,
     minVersion: '1.0.0',
     updateUrl: '',
+    contactWa: '',
+    loginNote: 'Silakan masukkan kode token Anda untuk mengakses siaran.',
+    globalUserAgent: 'Mozilla/5.0',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,6 +38,30 @@ const Settings = () => {
       alert('✅ Konfigurasi berhasil disimpan!');
     } catch (e) {
       alert('Error: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetAllDevices = async () => {
+    if (!window.confirm("⚠️ PERINGATAN: Tindakan ini akan menghapus SEMUA perangkat yang terdaftar di SEMUA token. Semua pengguna harus login ulang. Lanjutkan?")) return;
+
+    setSaving(true);
+    try {
+      const tokensRef = ref(database, 'access_tokens');
+      onValue(tokensRef, async (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const updates = {};
+          Object.keys(data).forEach(tokenKey => {
+            updates[`access_tokens/${tokenKey}/devices`] = null;
+          });
+          await update(ref(database), updates);
+          alert("✅ Semua perangkat berhasil di-reset!");
+        }
+      }, { onlyOnce: true });
+    } catch (e) {
+      alert("Gagal reset device: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -142,6 +169,43 @@ const Settings = () => {
         )}
       </SectionCard>
 
+      {/* Support & Login */}
+      <SectionCard title="📞 Customer Support & Login">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          <div className="form-group">
+            <label className="form-label">WhatsApp Admin (Link/No)</label>
+            <input
+              className="form-input"
+              placeholder="https://wa.me/62812..."
+              value={config.contactWa || ''}
+              onChange={e => setConfig({ ...config, contactWa: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Catatan di Layar Login</label>
+            <input
+              className="form-input"
+              value={config.loginNote || ''}
+              onChange={e => setConfig({ ...config, loginNote: e.target.value })}
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Player Settings */}
+      <SectionCard title="📺 Player Settings">
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Global User-Agent</label>
+          <input
+            className="form-input"
+            placeholder="Mozilla/5.0..."
+            value={config.globalUserAgent || ''}
+            onChange={e => setConfig({ ...config, globalUserAgent: e.target.value })}
+          />
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Diterapkan ke semua stream agar link tidak mudah diblokir oleh provider source.</p>
+        </div>
+      </SectionCard>
+
       {/* Force Update */}
       <SectionCard title="🔄 Force Update">
         <Toggle
@@ -151,7 +215,7 @@ const Settings = () => {
           description="Paksa pengguna update aplikasi jika versi lebih rendah dari versi minimum"
         />
         {config.forceUpdate && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label">Versi Minimum</label>
               <input className="form-input" placeholder="1.0.0" value={config.minVersion} onChange={e => setConfig({ ...config, minVersion: e.target.value })} />
@@ -162,6 +226,23 @@ const Settings = () => {
             </div>
           </div>
         )}
+      </SectionCard>
+
+      {/* Danger Zone */}
+      <SectionCard title="⚠️ Danger Zone">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>Reset Semua Perangkat</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>Hapus semua riwayat device dari semua token. Semua user harus login ulang.</div>
+          </div>
+          <button
+            className="btn"
+            onClick={resetAllDevices}
+            style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid #ef4444', padding: '0.5rem 1rem', fontSize: 12 }}
+          >
+            <RefreshCw size={14} style={{ marginRight: 6 }} /> Reset Devices
+          </button>
+        </div>
       </SectionCard>
 
       <div style={{ textAlign: 'right' }}>
