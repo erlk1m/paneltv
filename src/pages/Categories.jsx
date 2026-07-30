@@ -163,6 +163,35 @@ const Categories = () => {
     }
   };
 
+  const handleAutoGenerateFolders = async () => {
+    if (channelCategories.length === 0) return alert("Tidak ada kategori channel terdeteksi. Silakan import M3U terlebih dahulu di halaman Channels.");
+    if (!window.confirm(`Sistem mendeteksi ${channelCategories.length} kategori unik di playlist. Buat folder otomatis untuk kategori yang belum ada?`)) return;
+
+    try {
+      let createdCount = 0;
+      for (const catName of channelCategories) {
+        // Check if already exists in categories list
+        const exists = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+
+        if (!exists) {
+          const newRef = push(ref(database, 'categories'));
+          await set(newRef, {
+            id: newRef.key,
+            name: catName,
+            icon: getIcon(catName),
+            colorHex: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)],
+            isPlaylist: false,
+            channelCount: 0
+          });
+          createdCount++;
+        }
+      }
+      alert(`Berhasil membuat ${createdCount} folder baru!`);
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -173,9 +202,14 @@ const Categories = () => {
             Buat folder Playlist lalu isi dengan kategori dari playlist M3U Anda.
           </p>
         </div>
-        <button onClick={openAdd} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Plus size={16} /> Tambah Folder
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button onClick={handleAutoGenerateFolders} className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600 }}>
+            ✨ Auto Folder
+          </button>
+          <button onClick={openAdd} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Plus size={16} /> Tambah Folder
+          </button>
+        </div>
       </div>
 
       {/* How it works banner */}

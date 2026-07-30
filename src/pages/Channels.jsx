@@ -135,7 +135,7 @@ const Channels = () => {
     setSavingPlaylist(true);
     try {
       await set(ref(database, 'settings/playlistUrl'), playlistUrl.trim());
-      alert('URL Playlist berhasil disimpan! Aplikasi Android akan langsung memuat ulang channel.');
+      alert('URL Playlist berhasil disimpan!');
     } catch (error) {
       alert('Gagal menyimpan URL playlist');
     } finally {
@@ -143,14 +143,11 @@ const Channels = () => {
     }
   };
 
-  const handleImportM3U = async (e) => {
-    e.preventDefault();
-    if (!importUrl) return;
-
+  const runImport = async (url) => {
     setIsImporting(true);
     setImportProgress('Mengambil file M3U...');
     try {
-      const response = await fetch(importUrl);
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch M3U file');
 
       const text = await response.text();
@@ -186,14 +183,11 @@ const Channels = () => {
           currentLogo = logoMatch ? logoMatch[1] : '';
 
         } else if (line.startsWith('http')) {
-          // Strip pipe params like |Referer=...
           const actualUrl = line.split('|')[0];
-
           let streamType = 'HLS';
           if (actualUrl.includes('.mpd')) streamType = 'DASH';
           else if (actualUrl.includes('.mp4')) streamType = 'PROGRESSIVE';
 
-          // Convert ClearKey hex to JWK JSON
           let licenseServer = '';
           if (currentDrmType === 'CLEARKEY' && currentLicenseKey.includes(':')) {
             try {
@@ -208,16 +202,10 @@ const Channels = () => {
                   const kBytes = hexToBase64Url(parts[1].trim());
                   return `{"kty":"oct","k":"${kBytes}","kid":"${kidBytes}"}`;
                 }).filter(k => k !== null);
-                
-                if (jsonKeys.length > 0) {
-                  licenseServer = `{"keys":[${jsonKeys.join(',')}],"type":"temporary"}`;
-                } else {
-                  licenseServer = currentLicenseKey;
-                }
+                if (jsonKeys.length > 0) licenseServer = `{"keys":[${jsonKeys.join(',')}],"type":"temporary"}`;
+                else licenseServer = currentLicenseKey;
               }
-            } catch (_) {
-              licenseServer = currentLicenseKey;
-            }
+            } catch (_) { licenseServer = currentLicenseKey; }
           } else if (currentDrmType === 'WIDEVINE') {
             licenseServer = currentLicenseKey;
           }
@@ -236,15 +224,13 @@ const Channels = () => {
           });
 
           importCount++;
-          setImportProgress(`Memproses ${importCount} channel...`);
+          if (importCount % 20 === 0) setImportProgress(`Memproses ${importCount} channel...`);
 
-          // Reset per channel
           currentDrmType = 'NONE';
           currentLicenseKey = '';
         }
       }
 
-      // Save to Firebase in batches
       setImportProgress(`Menyimpan ${batch.length} channel ke Firebase...`);
       for (const ch of batch) {
         const newRef = push(ref(database, 'channels'));
@@ -252,15 +238,33 @@ const Channels = () => {
       }
 
       alert(`Berhasil mengimpor ${importCount} channel!`);
-      setShowImportModal(false);
-      setImportUrl('');
-      setImportProgress('');
+      return true;
     } catch (error) {
       console.error('Import error:', error);
-      alert('Gagal mengimpor channel. Pastikan URL valid dan mendukung CORS.');
+      alert('Gagal mengimpor channel: ' + error.message);
+      return false;
     } finally {
       setIsImporting(false);
       setImportProgress('');
+    }
+  };
+
+  const handleSyncFromUrl = async () => {
+    if (!playlistUrl) return alert("Masukkan URL playlist terlebih dahulu");
+    if (!window.confirm("Tindakan ini akan MENGHAPUS semua channel lama di Firebase dan menggantinya dengan isi dari URL tersebut. Lanjutkan?")) return;
+
+    setImportProgress('Membersihkan database...');
+    await remove(ref(database, 'channels'));
+    await runImport(playlistUrl);
+  };
+
+  const handleImportM3U = async (e) => {
+    e.preventDefault();
+    if (!importUrl) return;
+    const success = await runImport(importUrl);
+    if (success) {
+      setShowImportModal(false);
+      setImportUrl('');
     }
   };
 
@@ -310,23 +314,36 @@ const Channels = () => {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <input
             type="url"
             className="form-input"
             value={playlistUrl}
             onChange={(e) => setPlaylistUrl(e.target.value)}
             placeholder="https://raw.githubusercontent.com/.../vs1.m3u8"
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: '300px' }}
           />
           <button
-            className="btn btn-primary"
+            className="btn btn-outline"
             onClick={handleSavePlaylistUrl}
             disabled={savingPlaylist || playlistUrl === savedPlaylistUrl}
           >
-            {savingPlaylist ? 'Menyimpan...' : 'Simpan URL'}
+            {savingPlaylist ? '...' : 'Simpan URL'}
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleSyncFromUrl}
+            disabled={isImporting || !playlistUrl}
+            style={{ backgroundColor: '#10b981' }}
+          >
+            {isImporting ? 'Syncing...' : 'Sync ke Firebase'}
           </button>
         </div>
+        {importProgress && (
+          <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 600 }}>
+            ⏳ {importProgress}
+          </div>
+        )}
         {savedPlaylistUrl && (
           <p style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.5rem' }}>
             ✓ URL aktif: {savedPlaylistUrl}
