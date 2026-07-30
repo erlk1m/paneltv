@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../firebase';
-import { Tv, Users, Key, ShieldCheck, ShieldAlert, Activity, Clock } from 'lucide-react';
+import { Tv, Users, Key, ShieldCheck, ShieldAlert, Activity, Clock, Folder } from 'lucide-react';
 
 const StatCard = ({ icon: Icon, label, value, color, sub }) => (
   <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
@@ -95,8 +95,8 @@ const Dashboard = () => {
         <StatCard icon={ShieldCheck} label="Active Tokens" value={stats.activeTokens} color="#10b981" sub="Berlaku & aktif" />
         <StatCard icon={Clock} label="Expired Tokens" value={stats.expiredTokens} color="#f59e0b" sub="Melewati tanggal" />
         <StatCard icon={ShieldAlert} label="Revoked Tokens" value={stats.revokedTokens} color="#ef4444" sub="Dinonaktifkan" />
-        <StatCard icon={Tv} label="Total Channels" value={stats.totalChannels} color="#8b5cf6" />
-        <StatCard icon={Users} label="Banned Devices" value={stats.bannedDevices} color="#ec4899" />
+        <StatCard icon={Tv} label="Total Channels" value={stats.totalChannels} color="#8b5cf6" sub="Di Firebase" />
+        <StatCard icon={Folder} label="Folders" value={stats.totalCategories} color="#ec4899" sub="Kategori & Playlist" />
       </div>
 
       {/* Recent Tokens */}
@@ -108,33 +108,38 @@ const Dashboard = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Belum ada token.</p>
         ) : (
           <div>
-            {recentTokens.map(token => (
-              <div key={token.id} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{token.token}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
-                    {token.deviceId ? `📱 ${token.deviceId}` : '📱 Unused'}
+            {recentTokens.map(token => {
+              const deviceCount = token.devices ? Object.keys(token.devices).length : 0;
+              const maxAllowed = token.maxDevices || 1;
+
+              return (
+                <div key={token.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', gap: '1rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{token.token}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
+                      📱 {deviceCount} / {maxAllowed} Perangkat
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      {isLifetime(token.expiresAt) ? '♾️ Lifetime' : new Date(token.expiresAt).toLocaleDateString('id-ID')}
+                    </span>
+                    <span style={{
+                      padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600,
+                      backgroundColor: token.isActive && token.expiresAt > Date.now()
+                        ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: token.isActive && token.expiresAt > Date.now() ? '#10b981' : '#ef4444'
+                    }}>
+                      {token.isActive && token.expiresAt > Date.now() ? 'Active' : token.isActive ? 'Expired' : 'Revoked'}
+                    </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                    {isLifetime(token.expiresAt) ? '♾️ Lifetime' : new Date(token.expiresAt).toLocaleDateString('id-ID')}
-                  </span>
-                  <span style={{
-                    padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600,
-                    backgroundColor: token.isActive && token.expiresAt > Date.now()
-                      ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: token.isActive && token.expiresAt > Date.now() ? '#10b981' : '#ef4444'
-                  }}>
-                    {token.isActive && token.expiresAt > Date.now() ? 'Active' : token.isActive ? 'Expired' : 'Revoked'}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
