@@ -69,23 +69,40 @@ const Categories = () => {
     return () => unsub();
   }, []);
 
-  // Load channel categories (unique group-title values from channels)
+  // Load channel categories (unique group-title values from channels AND external playlist)
   useEffect(() => {
+    // 1. Get from Firebase Channels
     const channelsRef = ref(database, 'channels');
-    const unsub = onValue(channelsRef, (snapshot) => {
+    const unsubChannels = onValue(channelsRef, (snapshot) => {
       const data = snapshot.val();
+      let firebaseCats = [];
       if (data) {
-        const cats = [...new Set(
-          Object.values(data)
-            .map(ch => ch.category)
-            .filter(Boolean)
-        )].sort();
-        setChannelCategories(cats);
-      } else {
-        setChannelCategories([]);
+        firebaseCats = Object.values(data).map(ch => ch.category).filter(Boolean);
       }
+
+      // 2. Also get from External Playlist URL (for fully auto detection)
+      const settingsRef = ref(database, 'settings/playlistUrl');
+      onValue(settingsRef, async (snap) => {
+        const url = snap.val();
+        let externalCats = [];
+        if (url) {
+          try {
+            const res = await fetch(url);
+            const text = await res.text();
+            const matches = text.match(/group-title="([^"]+)"/g);
+            if (matches) {
+              externalCats = matches.map(m => m.match(/"([^"]+)"/)[1]);
+            }
+          } catch (e) { console.error("Auto detect categories failed", e); }
+        }
+
+        // Merge and unique
+        const combined = [...new Set([...firebaseCats, ...externalCats])].sort();
+        setChannelCategories(combined);
+      });
     });
-    return () => unsub();
+
+    return () => unsubChannels();
   }, []);
 
   const openAdd = () => {
@@ -164,32 +181,7 @@ const Categories = () => {
   };
 
   const handleAutoGenerateFolders = async () => {
-    if (channelCategories.length === 0) return alert("Tidak ada kategori channel terdeteksi. Silakan import M3U terlebih dahulu di halaman Channels.");
-    if (!window.confirm(`Sistem mendeteksi ${channelCategories.length} kategori unik di playlist. Buat folder otomatis untuk kategori yang belum ada?`)) return;
-
-    try {
-      let createdCount = 0;
-      for (const catName of channelCategories) {
-        // Check if already exists in categories list
-        const exists = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
-
-        if (!exists) {
-          const newRef = push(ref(database, 'categories'));
-          await set(newRef, {
-            id: newRef.key,
-            name: catName,
-            icon: getIcon(catName),
-            colorHex: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)],
-            isPlaylist: false,
-            channelCount: 0
-          });
-          createdCount++;
-        }
-      }
-      alert(`Berhasil membuat ${createdCount} folder baru!`);
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
+    alert("Fitur ini dinonaktifkan. Gunakan tombol 'Kelola Isi' pada folder untuk memasukkan kategori dari playlist.");
   };
 
   return (
@@ -203,9 +195,6 @@ const Categories = () => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button onClick={handleAutoGenerateFolders} className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600 }}>
-            ✨ Auto Folder
-          </button>
           <button onClick={openAdd} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Plus size={16} /> Tambah Folder
           </button>
@@ -340,9 +329,25 @@ const Categories = () => {
             </div>
 
             <div style={{ padding: '1rem 1.5rem', overflowY: 'auto', flex: 1 }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                Centang kategori dari playlist yang ingin dimasukkan ke dalam folder <b>{parentCatName}</b>. Di aplikasi TV, kategori yang dicentang akan muncul di popup modal saat folder diklik.
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0 }}>
+                  Centang kategori dari playlist yang ingin dimasukkan ke dalam folder.
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => setSelectedSubCats(channelCategories)}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(59,130,246,0.2)', color: 'var(--primary-color)', cursor: 'pointer' }}
+                  >
+                    Pilih Semua
+                  </button>
+                  <button
+                    onClick={() => setSelectedSubCats([])}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  >
+                    Hapus Semua
+                  </button>
+                </div>
+              </div>
 
               {channelCategories.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 0' }}>
