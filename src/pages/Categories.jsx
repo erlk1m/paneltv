@@ -43,7 +43,7 @@ const Categories = () => {
   const [selectedSubCats, setSelectedSubCats] = useState([]);
 
   const [formData, setFormData] = useState({
-    name: '', icon: '📺', colorHex: '#3b82f6', isPlaylist: false
+    name: '', icon: '📺', colorHex: '#3b82f6', isPlaylist: false, playlistUrl: ''
   });
 
   useEffect(() => {
@@ -126,7 +126,7 @@ const Categories = () => {
           <button className="btn btn-outline" onClick={autoGenerate} disabled={isSyncing}>
             <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} /> Auto Generate
           </button>
-          <button className="btn btn-primary" onClick={() => { setEditingId(null); setFormData({name:'', icon:'📺', colorHex:'#3b82f6', isPlaylist:false}); setShowModal(true); }}>
+          <button className="btn btn-primary" onClick={() => { setEditingId(null); setFormData({name:'', icon:'📺', colorHex:'#3b82f6', isPlaylist:false, playlistUrl: ''}); setShowModal(true); }}>
             <Plus size={16} /> Tambah Folder
           </button>
         </div>
@@ -141,10 +141,14 @@ const Categories = () => {
                   {cat.icon}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{cat.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                    {cat.isPlaylist ? '📁 Playlist Folder' : '🏷️ Simple Category'}
-                  </div>
+                  <h3 style={{ margin: 0, fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {cat.name} 
+                    {cat.isPlaylist && <Tag size={12} color="var(--primary-color)" />}
+                    {cat.playlistUrl && <span style={{ fontSize: 10, padding: '2px 6px', background: 'var(--primary-color)', color: '#fff', borderRadius: 4 }}>M3U</span>}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {cat.isPlaylist ? `${cat.subs.length} Kategori` : `${cat.channelCount || 0} Channel`}
+                  </p>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -197,9 +201,13 @@ const Categories = () => {
                   ))}
                 </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">Playlist URL (M3U)</label>
+                <input className="form-input" value={formData.playlistUrl || ''} onChange={e => setFormData({...formData, playlistUrl: e.target.value})} placeholder="https://.../playlist.m3u8" />
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>
-                <input type="checkbox" checked={formData.isPlaylist} onChange={e => setFormData({...formData, isPlaylist: e.target.checked})} style={{ width: 18, height: 18 }} />
-                <label style={{ fontSize: 13, fontWeight: 600 }}>Mode Playlist (Dapat diisi kategori lain)</label>
+                <input type="checkbox" checked={formData.isPlaylist || !!formData.playlistUrl} onChange={e => setFormData({...formData, isPlaylist: e.target.checked})} style={{ width: 18, height: 18 }} />
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Mode Playlist (Dapat diisi kategori lain atau dari URL)</label>
               </div>
               <button type="submit" className="btn btn-primary">Simpan</button>
             </form>

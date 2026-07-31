@@ -207,16 +207,7 @@ const Settings = () => {
             <input className="form-input" value={config.totalVisits} onChange={e => setConfig({ ...config, totalVisits: e.target.value })} />
           </div>
         </div>
-        <div className="form-group">
-          <label className="form-label">Global Playlist URL (M3U)</label>
-          <input
-            className="form-input"
-            placeholder="https://raw.githubusercontent.com/.../playlist.m3u"
-            value={config.playlistUrl || ''}
-            onChange={e => setConfig({ ...config, playlistUrl: e.target.value })}
-          />
-          <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Aplikasi akan otomatis memuat channel dari link ini. Bisa dikombinasikan dengan channel di Firebase.</p>
-        </div>
+
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Global User-Agent</label>
           <input
