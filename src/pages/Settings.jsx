@@ -18,6 +18,8 @@ const Settings = () => {
     loginNote: 'Silakan masukkan kode token Anda untuk mengakses siaran.',
     globalUserAgent: 'Mozilla/5.0',
     playlistUrl: '',
+    liveWatching: '0',
+    totalVisits: '0',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -193,8 +195,18 @@ const Settings = () => {
         </div>
       </SectionCard>
 
-      {/* Player Settings */}
+      {/* Player & Content */}
       <SectionCard title="📺 Player & Content Settings">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">Live Watching (Display)</label>
+            <input className="form-input" value={config.liveWatching} onChange={e => setConfig({ ...config, liveWatching: e.target.value })} />
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">Total Visits (Display)</label>
+            <input className="form-input" value={config.totalVisits} onChange={e => setConfig({ ...config, totalVisits: e.target.value })} />
+          </div>
+        </div>
         <div className="form-group">
           <label className="form-label">Global Playlist URL (M3U)</label>
           <input
