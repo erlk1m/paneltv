@@ -66,11 +66,12 @@ const Categories = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      const dataToSave = { ...formData, isPlaylist: formData.isPlaylist || !!formData.playlistUrl };
       if (editingId) {
-        await update(ref(database, `categories/${editingId}`), formData);
+        await update(ref(database, `categories/${editingId}`), dataToSave);
       } else {
         const newRef = push(ref(database, 'categories'));
-        await set(newRef, { ...formData, id: newRef.key, channelCount: 0 });
+        await set(newRef, { ...dataToSave, id: newRef.key, channelCount: 0 });
       }
       setShowModal(false);
     } catch (err) { alert(err.message); }
