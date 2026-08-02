@@ -98,7 +98,7 @@ const Categories = () => {
 
   const syncCategory = async (cat) => {
     if (!cat.playlistUrl) return;
-    if (!window.confirm(`Sync M3U untuk kategori "${cat.name}"? Channel lama di kategori ini akan diganti.`)) return;
+    if (!window.confirm(`Sync M3U untuk folder "${cat.name}"? Channel lama dari playlist ini akan diganti.`)) return;
     
     setIsSyncing(true);
     try {
@@ -112,19 +112,33 @@ const Categories = () => {
       const updates = {};
       
       Object.keys(allChannels).forEach(key => {
-        if (allChannels[key].category === cat.name) {
+        // Hapus jika playlistSource sama, ATAU category nya sama (untuk kompatibilitas lama)
+        if (allChannels[key].playlistSource === cat.id || allChannels[key].category === cat.name) {
           updates[`channels/${key}`] = null;
         }
       });
 
       let currentCh = {};
       let count = 0;
+      const foundGroups = new Set();
+
       for (let line of lines) {
         line = line.trim();
         if (line.startsWith('#EXTINF:')) {
           const name = line.split(',').pop();
           const logo = line.match(/tvg-logo="([^"]+)"/)?.[1] || '';
-          currentCh = { name, category: cat.name, logoUrl: logo, status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
+          const group = line.match(/group-title="([^"]+)"/)?.[1] || cat.name;
+          foundGroups.add(group);
+          
+          currentCh = { 
+            name, 
+            category: group, 
+            playlistSource: cat.id, // Penanda bahwa channel ini milik M3U ini
+            logoUrl: logo, 
+            status: 'ACTIVE', 
+            streamType: 'HLS', 
+            drmType: 'NONE' 
+          };
         } else if (line.startsWith('http')) {
           currentCh.streamUrl = line;
           if (line.includes('.mpd')) currentCh.streamType = 'DASH';
@@ -135,8 +149,17 @@ const Categories = () => {
         }
       }
 
+      // Update sub-categories folder ini secara otomatis
+      const subCatsObj = {};
+      foundGroups.forEach(groupName => {
+        const key = groupName.replace(/[.#$[\]/]/g, '_');
+        subCatsObj[key] = { id: groupName, name: groupName, icon: getIcon(groupName) };
+      });
+      updates[`categories/${cat.id}/subCategories`] = subCatsObj;
+      updates[`categories/${cat.id}/isPlaylist`] = true;
+
       await update(ref(database), updates);
-      alert(`Success! Disinkronisasi ${count} channels ke kategori ${cat.name}.`);
+      alert(`Success! Disinkronisasi ${count} channels. ${foundGroups.size} sub-kategori ditambahkan ke folder ${cat.name}.`);
     } catch (e) {
       alert("Sync failed: " + e.message);
     } finally {
