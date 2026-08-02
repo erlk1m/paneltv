@@ -18,7 +18,7 @@ import Categories from './pages/Categories';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/channels', icon: Tv, label: 'Channels' },
+  { path: '/channels', icon: Tv, label: 'Live Events' },
   { path: '/categories', icon: Layers, label: 'Categories' },
   { path: '/tokens', icon: Key, label: 'Tokens' },
   { path: '/users', icon: Users, label: 'Users' },

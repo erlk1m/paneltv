@@ -12,7 +12,6 @@ const Channels = () => {
 
   // UI State
   const [showModal, setShowModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -76,82 +75,16 @@ const Channels = () => {
     }
   };
 
-  const runImport = async (url, replace = false) => {
-    setIsSyncing(true);
-    setImportProgress('Fetching M3U...');
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      const text = await res.text();
-      const lines = text.split('\n');
-
-      if (replace) await remove(ref(database, 'channels'));
-
-      let count = 0;
-      let currentCh = { status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
-      const batch = [];
-
-      for (let line of lines) {
-        line = line.trim();
-        if (line.startsWith('#KODIPROP:inputstream.adaptive.license_type=')) {
-          const type = line.substring(line.indexOf('=') + 1).trim().toUpperCase();
-          currentCh.drmType = type === 'CLEARKEY' ? 'CLEARKEY' : (type === 'WIDEVINE' ? 'WIDEVINE' : 'NONE');
-        } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
-          currentCh.licenseServer = line.substring(line.indexOf('=') + 1).trim();
-        } else if (line.startsWith('#EXTVLCOPT:http-user-agent=')) {
-          currentCh.userAgent = line.substring(line.indexOf('=') + 1).trim();
-        } else if (line.startsWith('#EXTVLCOPT:http-referrer=') || line.startsWith('#EXTVLCOPT:http-referer=')) {
-          currentCh.referer = line.substring(line.indexOf('=') + 1).trim();
-        } else if (line.startsWith('#EXTINF:')) {
-          currentCh.name = line.split(',').pop();
-          currentCh.logoUrl = line.match(/tvg-logo="([^"]+)"/)?.[1] || '';
-          currentCh.category = line.match(/group-title="([^"]+)"/)?.[1] || 'General';
-        } else if (line.startsWith('http')) {
-          let cleanUrl = line;
-          if (line.includes('|')) {
-             const parts = line.split('|');
-             cleanUrl = parts[0];
-             const headers = parts[1];
-             if (headers.toLowerCase().includes('user-agent=')) currentCh.userAgent = headers.match(/user-agent=([^&]+)/i)?.[1] || currentCh.userAgent;
-             if (headers.toLowerCase().includes('referer=') || headers.toLowerCase().includes('referrer=')) currentCh.referer = headers.match(/referer=([^&]+)/i)?.[1] || currentCh.referer;
-          }
-          currentCh.streamUrl = cleanUrl;
-          if (cleanUrl.includes('.mpd')) currentCh.streamType = 'DASH';
-          
-          batch.push(currentCh);
-          count++;
-          if (count % 50 === 0) setImportProgress(`Processed ${count} channels...`);
-          
-          currentCh = { status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
-        }
-      }
-
-      setImportProgress(`Saving ${batch.length} channels...`);
-      const updates = {};
-      batch.forEach(ch => {
-        const newKey = push(ref(database, 'channels')).key;
-        updates[`channels/${newKey}`] = { ...ch, id: newKey };
-      });
-      await update(ref(database), updates);
-
-      alert(`Success! Imported ${count} channels.`);
-      setShowImportModal(false);
-    } catch (e) { alert("Import failed: " + e.message); }
-    finally { setIsSyncing(false); setImportProgress(''); }
-  };
-
   return (
     <div className="page-container">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2><Layers className="inline-icon" /> Channel Management</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Total {channels.length} channels di database</p>
+          <h2><Layers className="inline-icon" /> Live Events / Custom Channels</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Total {channels.length} channel manual di database</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn btn-outline" style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={deleteAllChannels}>
             <Trash2 size={16} /> Hapus Semua
-          </button>
-          <button className="btn btn-outline" onClick={() => setShowImportModal(true)}>
-            <Download size={16} /> Import M3U
           </button>
           <button className="btn btn-primary" onClick={() => { setEditingId(null); setShowModal(true); }}>
             <Plus size={16} /> Tambah Channel
@@ -286,21 +219,6 @@ const Channels = () => {
               </div>
               <button type="submit" className="btn btn-primary">Simpan</button>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Import */}
-      {showImportModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: '400px' }}>
-             <h3 style={{ marginBottom: '1.5rem', fontWeight: 700 }}>Import M3U Playlist</h3>
-             <input className="form-input" placeholder="https://..." onChange={e => setPlaylistUrl(e.target.value)} value={playlistUrl} />
-             {importProgress && <div style={{ marginTop: '1rem', color: 'var(--primary-color)', fontSize: 12 }}>{importProgress}</div>}
-             <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowImportModal(false)}>Batal</button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => runImport(playlistUrl)} disabled={isSyncing}>Import</button>
-             </div>
           </div>
         </div>
       )}
