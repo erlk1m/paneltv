@@ -21,6 +21,7 @@ const Channels = () => {
   const [formData, setFormData] = useState({
     name: '', category: '', streamUrl: '', streamType: 'HLS',
     drmType: 'NONE', licenseServer: '', logoUrl: '', status: 'ACTIVE',
+    userAgent: '', referer: '',
     isAdult: false, viewerCount: 0
   });
 
@@ -86,22 +87,41 @@ const Channels = () => {
       if (replace) await remove(ref(database, 'channels'));
 
       let count = 0;
-      let currentCh = {};
+      let currentCh = { status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
       const batch = [];
 
       for (let line of lines) {
         line = line.trim();
-        if (line.startsWith('#EXTINF:')) {
-          const name = line.split(',').pop();
-          const group = line.match(/group-title="([^"]+)"/)?.[1] || 'General';
-          const logo = line.match(/tvg-logo="([^"]+)"/)?.[1] || '';
-          currentCh = { name, category: group, logoUrl: logo, status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
+        if (line.startsWith('#KODIPROP:inputstream.adaptive.license_type=')) {
+          const type = line.substring(line.indexOf('=') + 1).trim().toUpperCase();
+          currentCh.drmType = type === 'CLEARKEY' ? 'CLEARKEY' : (type === 'WIDEVINE' ? 'WIDEVINE' : 'NONE');
+        } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
+          currentCh.licenseServer = line.substring(line.indexOf('=') + 1).trim();
+        } else if (line.startsWith('#EXTVLCOPT:http-user-agent=')) {
+          currentCh.userAgent = line.substring(line.indexOf('=') + 1).trim();
+        } else if (line.startsWith('#EXTVLCOPT:http-referrer=') || line.startsWith('#EXTVLCOPT:http-referer=')) {
+          currentCh.referer = line.substring(line.indexOf('=') + 1).trim();
+        } else if (line.startsWith('#EXTINF:')) {
+          currentCh.name = line.split(',').pop();
+          currentCh.logoUrl = line.match(/tvg-logo="([^"]+)"/)?.[1] || '';
+          currentCh.category = line.match(/group-title="([^"]+)"/)?.[1] || 'General';
         } else if (line.startsWith('http')) {
-          currentCh.streamUrl = line;
-          if (line.includes('.mpd')) currentCh.streamType = 'DASH';
+          let cleanUrl = line;
+          if (line.includes('|')) {
+             const parts = line.split('|');
+             cleanUrl = parts[0];
+             const headers = parts[1];
+             if (headers.toLowerCase().includes('user-agent=')) currentCh.userAgent = headers.match(/user-agent=([^&]+)/i)?.[1] || currentCh.userAgent;
+             if (headers.toLowerCase().includes('referer=') || headers.toLowerCase().includes('referrer=')) currentCh.referer = headers.match(/referer=([^&]+)/i)?.[1] || currentCh.referer;
+          }
+          currentCh.streamUrl = cleanUrl;
+          if (cleanUrl.includes('.mpd')) currentCh.streamType = 'DASH';
+          
           batch.push(currentCh);
           count++;
           if (count % 50 === 0) setImportProgress(`Processed ${count} channels...`);
+          
+          currentCh = { status: 'ACTIVE', streamType: 'HLS', drmType: 'NONE' };
         }
       }
 
@@ -235,6 +255,28 @@ const Channels = () => {
                     <option value="MAINTENANCE">Maintenance</option>
                   </select>
                 </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">DRM Type</label>
+                  <select className="form-input" value={formData.drmType} onChange={e => setFormData({...formData, drmType: e.target.value})}>
+                    <option value="NONE">None</option>
+                    <option value="CLEARKEY">ClearKey</option>
+                    <option value="WIDEVINE">Widevine</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">License Key/URL</label>
+                  <input className="form-input" value={formData.licenseServer || ''} onChange={e => setFormData({...formData, licenseServer: e.target.value})} placeholder="hex:hex atau url" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">User-Agent (Opsional)</label>
+                <input className="form-input" value={formData.userAgent || ''} onChange={e => setFormData({...formData, userAgent: e.target.value})} placeholder="Custom User-Agent" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Referer (Opsional)</label>
+                <input className="form-input" value={formData.referer || ''} onChange={e => setFormData({...formData, referer: e.target.value})} placeholder="Custom Referer" />
               </div>
               <button type="submit" className="btn btn-primary">Simpan</button>
             </form>
