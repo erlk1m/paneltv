@@ -230,9 +230,15 @@ const Channels = () => {
                 <label className="form-label">Nama Channel</label>
                 <input className="form-input" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
               </div>
-              <div className="form-group">
-                <label className="form-label">Kategori</label>
-                <input className="form-input" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} required />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Kategori</label>
+                  <input className="form-input" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Logo URL (Opsional)</label>
+                  <input className="form-input" value={formData.logoUrl || ''} onChange={e => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." />
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Stream URL</label>
