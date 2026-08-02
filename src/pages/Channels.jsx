@@ -31,10 +31,6 @@ const Channels = () => {
       setLoading(false);
     });
 
-    onValue(ref(database, 'app_config/playlistUrl'), (snap) => {
-      setPlaylistUrl(snap.val() || '');
-    });
-
     return () => unsub();
   }, []);
 
@@ -72,7 +68,7 @@ const Channels = () => {
     setIsSyncing(true);
     setImportProgress('Fetching M3U...');
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       const text = await res.text();
       const lines = text.split('\n');
 
@@ -129,21 +125,7 @@ const Channels = () => {
         </div>
       </div>
 
-      {/* Sync Banner */}
-      {playlistUrl && (
-        <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #10b98144', background: '#10b98111' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Link size={20} color="#10b981" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>External Playlist Active</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{playlistUrl}</div>
-            </div>
-          </div>
-          <button className="btn" onClick={() => runImport(playlistUrl, true)} disabled={isSyncing} style={{ background: '#10b981', color: 'white', fontSize: 12 }}>
-            {isSyncing ? 'Syncing...' : 'Sync to Firebase'}
-          </button>
-        </div>
-      )}
+
 
       {/* Search & Filter */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
