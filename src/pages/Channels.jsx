@@ -64,6 +64,17 @@ const Channels = () => {
     }
   };
 
+  const deleteAllChannels = async () => {
+    if (window.confirm("PERINGATAN: Anda yakin ingin menghapus SEMUA channel? Tindakan ini tidak bisa dibatalkan.")) {
+      try {
+        await remove(ref(database, 'channels'));
+        alert("Semua channel berhasil dihapus.");
+      } catch (err) {
+        alert("Gagal menghapus: " + err.message);
+      }
+    }
+  };
+
   const runImport = async (url, replace = false) => {
     setIsSyncing(true);
     setImportProgress('Fetching M3U...');
@@ -116,6 +127,9 @@ const Channels = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Total {channels.length} channels di database</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn btn-outline" style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={deleteAllChannels}>
+            <Trash2 size={16} /> Hapus Semua
+          </button>
           <button className="btn btn-outline" onClick={() => setShowImportModal(true)}>
             <Download size={16} /> Import M3U
           </button>
